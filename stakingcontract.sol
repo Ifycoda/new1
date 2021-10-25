@@ -83,6 +83,7 @@ contract staking is  Ownable{
     mapping (address=>bool) whiteListaddress; 
     mapping (string=>address) tokenaddress;
     mapping (string=>mapping(address=>uint)) balances;
+    mapping (address=>bool) withdrawonce;
    
     
     function setIntrestrate(uint rate)public onlyOwner{
@@ -108,6 +109,7 @@ contract staking is  Ownable{
     function stake(uint amount , string memory ticker) public {
         timestart[msg.sender]=block.timestamp;
         require( whiteListaddress[tokenaddress[ticker]]==true);
+         withdrawonce[msg.sender]=true;
         balances[ticker][msg.sender]+=amount;
         IERC20(tokenaddress[ticker]).transferFrom(msg.sender,address(this),amount);
         
@@ -115,11 +117,13 @@ contract staking is  Ownable{
     
     function withdraw(string memory ticker)public {
          require(block.timestamp-timestart[msg.sender]>=1 minutes);
+         require(withdrawonce[msg.sender]==true);
          uint timetowithdraw=(block.timestamp-timestart[msg.sender]);
          uint reward=((((timetowithdraw*interestRatePerday)*10000000000000)/(100*86400))*balances[ticker][msg.sender])/10000000000000;
          uint bal=balances[ticker][msg.sender]+reward;
+          balances[ticker][msg.sender]-=balances[ticker][msg.sender];
          IERC20(tokenaddress[ticker]).transfer(msg.sender,bal);
-        
+         withdrawonce[msg.sender]=false;
         
         
     }
